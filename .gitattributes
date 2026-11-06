@@ -1,0 +1,8 @@
+# Windows 전용 프로젝트: 어느 PC 에서 받아도 텍스트 파일은 CRLF (PowerShell 5.1 스크립트·XAML·C#)
+* text=auto eol=crlf
+
+*.ico binary
+*.png binary
+*.zip binary
+*.exe binary
+*.dll binary

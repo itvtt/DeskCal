@@ -1,0 +1,89 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- 트레이 아이콘(NotifyIcon) 용 -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <PackageIcon></PackageIcon>
+    <ApplicationIcon>cal.ico</ApplicationIcon>
+    <!-- 릴리스 버전의 바닥값. 러너(.github\workflows\release.yml)는 마지막 릴리스 다음 번호를 골라 -p:Version 으로 넘김.
+         큰 변경으로 번호를 올리려면 여기만 올리면 됨 (예: 1.2.0) -->
+    <Version>1.1.0</Version>
+    <!-- 설치 프로그램·빌드 스크립트·빌드 결과는 앱 소스가 아님 (out\ 의 게시 결과가 프로젝트에 끌려 들어오지 않게) -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);installer\**;build\**;out\**;artifacts\**</DefaultItemExcludes>
+    <!-- .NET 10 이 없는 PC 에는 DeskCal-Setup.exe 가 실행 환경을 <앱>\dotnet 에 넣음.
+         실행 파일은 거기를 먼저 찾고, 없으면 DOTNET_ROOT, 설치된 .NET 순으로 찾음 -->
+    <AppHostRelativeDotNet>dotnet</AppHostRelativeDotNet>
+    <AppHostDotNetSearch>AppRelative;EnvironmentVariable;Global</AppHostDotNetSearch>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms 전역 using 은 WPF 형식(Application, Color, Button…)과 이름이 겹치므로 제외 -->
+    <Using Remove="System.Drawing" />
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="calendar.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="cal.ico" />
+    <!-- 화면 글꼴 Pretendard (SIL OFL 1.1, 라이선스 글은 함께 배포) -->
+    <Resource Include="Fonts\*.otf" />
+    <None Include="Fonts\Pretendard-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
+  </ItemGroup>
+
+  <!-- 릴리스는 디버그 기호 없이 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <!-- dotnet publish -p:ReleaseZip=<경로> 이면 게시 폴더를 릴리스 zip 으로도 묶음 (build\Publish-Release.ps1 이 사용) -->
+  <Target Name="PackReleaseZip" AfterTargets="Publish" Condition="'$(ReleaseZip)' != ''">
+    <ZipDirectory SourceDirectory="$(PublishDir)" DestinationFile="$(ReleaseZip)" Overwrite="true" />
+  </Target>
+
+  <!-- 자동 업데이트 위치: .env 의 UPDATE_* 줄을 앱 옆 update.json 으로 (.env.sample 참고).
+       .env 가 없는 개발 빌드는 저장소가 비어 업데이트를 확인하지 않음 -->
+  <Target Name="WriteUpdateConfig" BeforeTargets="AssignTargetPaths">
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\.env" Condition="Exists('$(MSBuildProjectDirectory)\.env')">
+      <Output TaskParameter="Lines" ItemName="_UpdateEnvLine" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <_UpdateApiLine Include="@(_UpdateEnvLine)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('UPDATE_GITHUB_API='))" />
+      <_UpdateRepoLine Include="@(_UpdateEnvLine)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('UPDATE_REPOSITORY='))" />
+      <_UpdateTokenLine Include="@(_UpdateEnvLine)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('UPDATE_TOKEN='))" />
+      <_UpdateAssetLine Include="@(_UpdateEnvLine)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('UPDATE_ASSET='))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_UpdateApi>@(_UpdateApiLine)</_UpdateApi>
+      <_UpdateRepo>@(_UpdateRepoLine)</_UpdateRepo>
+      <_UpdateToken>@(_UpdateTokenLine)</_UpdateToken>
+      <_UpdateAsset>@(_UpdateAssetLine)</_UpdateAsset>
+      <_UpdateApi Condition="'$(_UpdateApi)' != ''">$(_UpdateApi.Substring(18).Trim())</_UpdateApi>
+      <_UpdateRepo Condition="'$(_UpdateRepo)' != ''">$(_UpdateRepo.Substring(18).Trim())</_UpdateRepo>
+      <_UpdateToken Condition="'$(_UpdateToken)' != ''">$(_UpdateToken.Substring(13).Trim())</_UpdateToken>
+      <_UpdateAsset Condition="'$(_UpdateAsset)' != ''">$(_UpdateAsset.Substring(13).Trim())</_UpdateAsset>
+      <!-- Actions 러너에서 UPDATE_REPOSITORY 가 비어 있으면 "이 저장소": 릴리스를 올리는 곳에서 업데이트도 받음 -->
+      <_UpdateApi Condition="'$(_UpdateRepo)' == '' and '$(GITHUB_ACTIONS)' == 'true'">$(GITHUB_API_URL)</_UpdateApi>
+      <_UpdateRepo Condition="'$(_UpdateRepo)' == '' and '$(GITHUB_ACTIONS)' == 'true'">$(GITHUB_REPOSITORY)</_UpdateRepo>
+      <_UpdateConfigPath>$(IntermediateOutputPath)update.json</_UpdateConfigPath>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_UpdateConfigPath)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="{ &quot;Api&quot;: &quot;$(_UpdateApi)&quot;, &quot;Repository&quot;: &quot;$(_UpdateRepo)&quot;, &quot;Token&quot;: &quot;$(_UpdateToken)&quot;, &quot;Asset&quot;: &quot;$(_UpdateAsset)&quot; }" />
+    <ItemGroup>
+      <Content Include="$(_UpdateConfigPath)" Link="update.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <FileWrites Include="$(_UpdateConfigPath)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -1,0 +1,94 @@
+# DeskCal 릴리스: 셀프호스트 Windows 러너가 main 에 푸시될 때마다 빌드하고, 다음 버전을 골라
+# GitHub Release 에 두 파일을 올립니다:
+#   DeskCal-Setup.exe     사용자가 처음 한 번 설치 (사용자별, 관리자 권한 없음)
+#   DeskCal-win-x64.zip   설치된 앱이 시작 직후와 6시간마다 최신 릴리스를 확인하고 이것으로 스스로 업데이트
+#
+# github.com 과 사내 GitHub Enterprise 모두 그대로 동작합니다 (API 주소·저장소 이름은 실행 환경에서 읽음).
+# 빌드는 build\Publish-Release.ps1 (Windows PowerShell 5.1). 러너에는 .NET 10 SDK 만 있으면 됩니다.
+#
+# 처음 한 번 (README "사내 저장소에서 릴리스" 참고):
+#   - 러너: .NET 10 SDK, 레이블 self-hosted, windows
+#   - 비공개·내부(internal) 저장소면 Secret DESKCAL_UPDATE_TOKEN 에 이 저장소를 읽을 수 있는 토큰
+#     (앱이 릴리스를 확인할 때 씀). .env 전체를 넣고 싶으면 Secret DESKCAL_ENV (.env.sample 참고),
+#     또는 러너 PC 에 .env 를 두고 러너 환경 변수 DESKCAL_ENV_PATH 로 경로를 알려 줌.
+#     공개 저장소면 필요 없음.
+#   - nuget.org 가 막혀 있으면 러너 PC 환경 변수 NUGET_SOURCE 에 사내 NuGet 미러 주소
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', '**.md', '.env.sample', '.gitignore', '.gitattributes', 'build/Export-Repository.ps1']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deskcal-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 30
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 릴리스 노트: 지난 릴리스 태그 이후의 커밋 목록
+
+      - name: Restore .env
+        shell: powershell
+        env:
+          DC_ENV: ${{ secrets.DESKCAL_ENV }}
+          DC_TOKEN: ${{ secrets.DESKCAL_UPDATE_TOKEN }}
+        run: |
+          $utf8 = New-Object Text.UTF8Encoding($false)
+          if ($env:DC_ENV) { [IO.File]::WriteAllText("$PWD\.env", $env:DC_ENV, $utf8); Write-Host '.env from secret DESKCAL_ENV' }
+          elseif ($env:DESKCAL_ENV_PATH -and (Test-Path $env:DESKCAL_ENV_PATH)) { Copy-Item $env:DESKCAL_ENV_PATH .env -Force; Write-Host ".env from $env:DESKCAL_ENV_PATH" }
+          elseif ($env:DC_TOKEN) { [IO.File]::WriteAllText("$PWD\.env", "UPDATE_TOKEN=$($env:DC_TOKEN.Trim())`r`n", $utf8); Write-Host '.env from secret DESKCAL_UPDATE_TOKEN' }
+          else { Write-Host "::notice::No update token: the app checks this repository's releases without one (fine for a public repository)." }
+
+      # 다음 버전: 마지막 릴리스의 다음 번호. csproj <Version> 이 바닥값이라 뒤로 가지 않음
+      # (run 블록은 러너가 임시 스크립트로 쓰므로 한글은 build\*.ps1 에만 둠)
+      - name: Pick version
+        id: version
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          API: ${{ github.api_url }}
+          REPO: ${{ github.repository }}
+        run: |
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          [xml]$project = Get-Content DeskCal.csproj -Encoding UTF8
+          $base = [version](@($project.Project.PropertyGroup.Version) | Where-Object { $_ } | Select-Object -First 1)
+          $latest = $null; $previousTag = ''
+          try {
+            $release = Invoke-RestMethod -UseBasicParsing -Uri "$env:API/repos/$env:REPO/releases/latest" `
+              -Headers @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+            $latest = [version]($release.tag_name.TrimStart('v', 'V')); $previousTag = $release.tag_name
+          } catch { Write-Host "No previous release." }
+          if ($latest -and $latest -ge $base) { $next = [version]::new($latest.Major, $latest.Minor, $latest.Build + 1) } else { $next = [version]::new($base.Major, $base.Minor, [Math]::Max(0, $base.Build)) }
+          Write-Host "Version $next (previous: $(if ($previousTag) { $previousTag } else { 'none' }))"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$next" -Encoding ASCII
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "previous=$previousTag" -Encoding ASCII
+
+      - name: Build
+        id: build
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File build\Publish-Release.ps1 -Version ${{ steps.version.outputs.version }}
+
+      # 초안으로 만들어 두 파일을 올린 뒤 공개. 노트는 지난 릴리스 이후 커밋 제목 (build\New-GitHubRelease.ps1)
+      - name: Create release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_PREVIOUS: ${{ steps.version.outputs.previous }}
+          RELEASE_ZIP: ${{ steps.build.outputs.zip }}
+          RELEASE_SETUP: ${{ steps.build.outputs.setup }}
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File build\New-GitHubRelease.ps1
