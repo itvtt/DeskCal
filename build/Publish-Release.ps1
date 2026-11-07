@@ -4,7 +4,7 @@
 #   DeskCal-win-x64.zip   설치된 앱이 GitHub Release 에서 내려받아 스스로 업데이트하는 패키지
 #   win-x64\              게시된 앱 폴더 (zip 의 내용)
 # .NET 10 SDK 만 있으면 됩니다 (Microsoft.Data.Sqlite 는 NuGet 에서 복원).
-# nuget.org 가 막힌 사내망이면 사내 NuGet 미러 주소를 -NuGetSource 또는 환경 변수 NUGET_SOURCE 로 주세요
+# nuget.org 가 막힌 망이면 NuGet 미러 주소를 -NuGetSource 또는 환경 변수 NUGET_SOURCE 로 주세요
 # (러너 PC 의 시스템 환경 변수나 러너 폴더의 .env 에 두면 워크플로에서도 쓰입니다).
 # .github\workflows\release.yml 이 부르고, 손으로도 실행할 수 있습니다:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File build\Publish-Release.ps1 [-Version 1.1.3]

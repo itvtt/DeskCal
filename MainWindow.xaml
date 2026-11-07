@@ -1022,7 +1022,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- ── 교대근무 (4조) ── 켜야 아래 줄이 펼쳐짐. 근무는 사내 근무 API 에서 (docs/shift-api.md) -->
+                                <!-- ── 교대근무 (4조) ── 켜야 아래 줄이 펼쳐짐. 근무는 근무 API 에서 (docs/shift-api.md) -->
                                 <StackPanel Style="{StaticResource SettingSectionHeader}">
                                     <TextBlock Style="{StaticResource SettingSectionIcon}" Text="&#xE716;" Foreground="{DynamicResource Th_FFFFC94D}"/>
                                     <TextBlock Style="{StaticResource SettingSectionTitle}" Text="교대근무"/>

@@ -430,7 +430,7 @@ namespace DeskCal
                 value TEXT
             );
 
-            -- 사내 근무 API 로 받은 교대근무 (docs/shift-api.md). 하루 한 조에 한 줄
+            -- 근무 API 로 받은 교대근무 (docs/shift-api.md). 하루 한 조에 한 줄
             CREATE TABLE IF NOT EXISTS shifts (
                 date_key TEXT NOT NULL,
                 team     TEXT NOT NULL,

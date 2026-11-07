@@ -4,7 +4,7 @@
 #   릴리스 노트: 지난 릴리스 태그 이후의 커밋 제목 (병합 커밋 제외).
 # 환경 변수: GH_TOKEN (contents: write), GITHUB_API_URL, GITHUB_REPOSITORY, GITHUB_SHA — Actions 가 넣어 줌.
 #           RELEASE_VERSION, RELEASE_ZIP, RELEASE_SETUP, RELEASE_PREVIOUS(지난 태그, 없으면 비움) — 워크플로가 넣어 줌.
-# (powershell -File 은 빈 인수를 버리므로 값은 환경 변수로 받음.) github.com 과 사내 GitHub Enterprise 모두 같은 API 입니다.
+# (powershell -File 은 빈 인수를 버리므로 값은 환경 변수로 받음.) github.com 과 GitHub Enterprise 모두 같은 API 입니다.
 param(
     [string]$Version = $env:RELEASE_VERSION,
     [string]$Zip = $env:RELEASE_ZIP,

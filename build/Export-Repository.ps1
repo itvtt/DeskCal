@@ -1,9 +1,9 @@
-﻿# 사내 저장소로 보낼 깨끗한 저장소 묶음을 만듭니다: out\DeskCal-repo.zip
+﻿# 새 저장소로 보낼 깨끗한 저장소 묶음을 만듭니다: out\DeskCal-repo.zip
 #   안에 DeskCal\ 폴더 하나: main 브랜치에 커밋 하나가 든 git 저장소입니다.
 #   bin·obj·out·.vs·.vshistory·.env·*.user 같은 빌드 결과·개인 설정은 빠집니다 (.gitignore 기준).
-# 받은 쪽(사내 PC)에서:
+# 받은 쪽 PC 에서:
 #   1) 압축을 풀고 DeskCal 폴더로 이동
-#   2) git remote add origin <사내 저장소 주소>      (README 이나 .gitignore 없이 "빈 저장소"로 만든 것)
+#   2) git remote add origin <저장소 주소>      (README 이나 .gitignore 없이 "빈 저장소"로 만든 것)
 #   3) git push -u origin main                        → 러너가 있으면 바로 첫 릴리스가 시작됩니다
 # 실행:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File build\Export-Repository.ps1 [-Message "DeskCal 1.1"]
@@ -72,9 +72,9 @@ try {
     Write-Host ("Repository zip: {0} ({1:N1} MB)" -f $zip, ((Get-Item $zip).Length / 1MB))
     Write-Host ("  main @ {0} '{1}', {2} files" -f $commit, $Message, $files.Count)
     Write-Host ''
-    Write-Host 'On the company PC:'
+    Write-Host 'On the receiving PC:'
     Write-Host '  unzip, cd DeskCal'
-    Write-Host '  git remote add origin <empty company repository URL>'
+    Write-Host '  git remote add origin <empty repository URL>'
     Write-Host '  git push -u origin main'
 }
 finally {

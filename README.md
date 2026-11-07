@@ -11,37 +11,37 @@ AppIcon.cs                      창·작업 표시줄·트레이 아이콘에 �
 Theme.cs                        라이트 / 다크 테마 (툴바의 해·달 버튼). 색은 다크 기준으로 적고, 라이트에서 같은 역할의 색으로 바꿈
 MainWindow.Shift.cs             교대근무 표시 (설정의 교대근무 구역, 달력 칸의 조별 근무 배지)
 ShiftSchedule.cs                4조 3교대(A·B·C·D) 계산: D → S → G → 휴, 날짜별 조 근무
-docs\shift-api.md               교대근무 데이터 형식과 사내 근무 API 형식 (공휴일 API 와 같은 방식)
+docs\shift-api.md               교대근무 데이터 형식과 근무 API 형식 (공휴일 API 와 같은 방식)
 MainWindow.Updates.cs           자동 업데이트 (확인 주기·트레이 알림·설치)
 UpdateService.cs                GitHub Release 확인·내려받기·업데이터
 installer\                      DeskCal-Setup.exe / uninstall.exe (.NET Framework 4.8, 사용자별 설치)
 build\Publish-Release.ps1       릴리스 빌드 → out\DeskCal-Setup.exe, out\DeskCal-win-x64.zip
 build\New-GitHubRelease.ps1     러너가 Release 를 만듦 (초안 → 파일 업로드 → 공개, 커밋 제목으로 노트)
-build\Export-Repository.ps1     사내 저장소로 보낼 묶음 → out\DeskCal-repo.zip
+build\Export-Repository.ps1     새 저장소로 보낼 묶음 → out\DeskCal-repo.zip
 build\Make-Icon.ps1             cal.ico (exe·설치 프로그램·바로 가기 아이콘, AppIcon 과 같은 모양의 고정 날짜)를 그려서 만듦
 .github\workflows\release.yml   셀프호스트 러너 릴리스
 .env.sample                     업데이트 설정 예시 (.env 는 git 에 올리지 않음)
 ```
 
-## 사내 저장소에서 릴리스 (처음 한 번)
+## 새 저장소에서 릴리스 (처음 한 번)
 
-github.com 조직과 사내 GitHub Enterprise 모두 같은 방법입니다. API 주소·저장소 이름은 러너가 알아서 넣습니다.
+github.com 조직과 GitHub Enterprise 모두 같은 방법입니다. API 주소·저장소 이름은 러너가 알아서 넣습니다.
 
 1. **보낼 묶음 만들기** (지금 소스가 있는 PC)
    ```
    powershell -NoProfile -ExecutionPolicy Bypass -File build\Export-Repository.ps1
    ```
    `out\DeskCal-repo.zip` 이 생깁니다. 안의 `DeskCal\` 는 `main` 에 커밋 하나가 든 git 저장소이고, 빌드 결과·VS 설정·`.env` 는 빠져 있습니다.
-2. **사내 GitHub 에 빈 저장소 만들기**: README·.gitignore·라이선스를 추가하지 않은 빈 저장소. 비공개(private)나 내부(internal) 둘 다 됩니다.
-3. **올리기** (사내 PC): zip 을 풀고
+2. **GitHub 에 빈 저장소 만들기**: README·.gitignore·라이선스를 추가하지 않은 빈 저장소. 비공개(private)나 내부(internal) 둘 다 됩니다.
+3. **올리기** (저장소를 올릴 PC): zip 을 풀고
    ```
    cd DeskCal
-   git remote add origin <사내 저장소 주소>
+   git remote add origin <저장소 주소>
    git push -u origin main
    ```
 4. **러너**: 저장소(또는 조직) Settings → Actions → Runners → New self-hosted runner → Windows x64 안내대로 설치·등록하고 서비스로 실행합니다. 레이블 `self-hosted`, `windows` 는 기본으로 붙으므로, 조직에 이미 Windows 셀프호스트 러너가 있으면 그것을 써도 됩니다.
    - 러너 PC 에 필요한 것: **.NET 10 SDK**, **Git** (릴리스 노트용. 없어도 빌드는 됨)
-   - 빌드 때 Microsoft.Data.Sqlite 를 nuget.org 에서 받습니다. 사내망에서 막혀 있으면 러너 PC 시스템 환경 변수 `NUGET_SOURCE` 에 사내 NuGet 미러 주소를 넣고 러너 서비스를 다시 시작하세요.
+   - 빌드 때 Microsoft.Data.Sqlite 를 nuget.org 에서 받습니다. 막혀 있으면 러너 PC 시스템 환경 변수 `NUGET_SOURCE` 에 NuGet 미러 주소를 넣고 러너 서비스를 다시 시작하세요.
 5. **업데이트 토큰** (비공개·내부 저장소일 때): 설치된 앱이 릴리스를 확인할 때 쓸, 이 저장소를 **읽기만** 하는 토큰을 만들어 저장소 Settings → Secrets and variables → Actions 에 `DESKCAL_UPDATE_TOKEN` 으로 넣습니다.
    - fine-grained token 이면 이 저장소만, Contents: Read-only. classic token 이면 `repo` 범위 (전용 계정 권장)
    - 토큰은 앱 안에 들어갑니다. 쓰기 권한은 주지 마세요.
@@ -71,7 +71,7 @@ github.com 조직과 사내 GitHub Enterprise 모두 같은 방법입니다. API
 ## 손으로 빌드
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File build\Publish-Release.ps1 -Version 1.1.0 [-NuGetSource <사내 미러>]
+powershell -NoProfile -ExecutionPolicy Bypass -File build\Publish-Release.ps1 -Version 1.1.0 [-NuGetSource <NuGet 미러>]
 ```
 
 `out\` 에 `DeskCal-Setup.exe`, `DeskCal-win-x64.zip` 이 생깁니다. `.env` 가 없으면 업데이트를 확인하지 않는 빌드가 됩니다.

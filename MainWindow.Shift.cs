@@ -15,13 +15,13 @@ namespace DeskCal
     // 교대근무 표시 (설정 → 교대근무). 달력 칸 날짜 줄 오른쪽 끝에 근무 배지:
     // 여러 조면 A·B·C·D 네 자리를 늘 같은 자리에 두고 고른 조만 근무를 씀 ("D S G 휴", B·D조면 "_ S _ 휴"),
     // 한 조만 고르면 "Day" · "Swing" · "Gy" · "휴무".
-    // 근무는 사내 근무 API 를 공휴일처럼 받아 DB 에 두고 씀 (docs/shift-api.md). API 값이 없는 날은 정해진 순서로 계산
+    // 근무는 근무 API 를 공휴일처럼 받아 DB 에 두고 씀 (docs/shift-api.md). API 값이 없는 날은 정해진 순서로 계산
     // ──────────────────────────────────────────────
     public partial class MainWindow
     {
         private bool _shiftUiReady; // 설정값을 컨트롤에 채우는 동안 바뀜 이벤트를 무시
 
-        // 사내 API 로 받은 근무: 날짜 → [A, B, C, D] 코드 (그날 빠진 조는 null)
+        // 근무 API 로 받은 근무: 날짜 → [A, B, C, D] 코드 (그날 빠진 조는 null)
         private readonly Dictionary<DateTime, string?[]> _shiftData = new();
         private DateTime _shiftFetchedOn = DateTime.MinValue; // 마지막으로 받으려 한 날
         private bool _shiftFetchOk;  // 그때 한 해라도 받았는지 (못 받았으면 한 시간 뒤 다시)
@@ -203,7 +203,7 @@ namespace DeskCal
                 .Select(x => ShiftSchedule.Describe(x.Team, ShiftCodeFor(date, x.Index))));
         }
 
-        // ── 사내 근무 API (공휴일 API 와 같은 서버) ──
+        // ── 근무 API (공휴일 API 와 같은 서버) ──
         private void LoadShifts()
         {
             _shiftData.Clear();

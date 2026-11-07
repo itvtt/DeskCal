@@ -20,7 +20,7 @@ namespace DeskCal
     public sealed class UpdateAccessException(string repository, int status) : InvalidOperationException(
         $"업데이트 저장소({repository})에 접근할 수 없습니다 ({status}). .env의 UPDATE_TOKEN(읽기 권한)을 확인하세요.");
 
-    // 사내 Actions 러너가 올린 최신 GitHub Release 를 확인하고 패키지를 내려받은 뒤,
+    // Actions 러너가 올린 최신 GitHub Release 를 확인하고 패키지를 내려받은 뒤,
     // 이 프로세스가 끝나면 파일을 바꾸는 작은 업데이터에 넘김
     public sealed class UpdateService(UpdateSettings settings, HttpMessageHandler? handler = null)
     {
