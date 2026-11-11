@@ -20,6 +20,11 @@ on:
     branches: [main]
     paths-ignore: ['docs/**', '**.md', '.env.sample', '.gitignore', '.gitattributes', 'build/Export-Repository.ps1']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, for example 1.2.0 (empty: the next patch)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -60,6 +65,7 @@ jobs:
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ github.event.inputs.version }}
           API: ${{ github.api_url }}
           REPO: ${{ github.repository }}
         run: |
@@ -73,6 +79,12 @@ jobs:
             $latest = [version]($release.tag_name.TrimStart('v', 'V')); $previousTag = $release.tag_name
           } catch { Write-Host "No previous release." }
           if ($latest -and $latest -ge $base) { $next = [version]::new($latest.Major, $latest.Minor, $latest.Build + 1) } else { $next = [version]::new($base.Major, $base.Minor, [Math]::Max(0, $base.Build)) }
+          if ($env:REQUESTED_VERSION -and $env:REQUESTED_VERSION.Trim()) {
+            $wanted = $env:REQUESTED_VERSION.Trim().TrimStart('v', 'V')
+            if ($wanted -notmatch '^\d+\.\d+\.\d+$') { throw "Version must look like 1.2.3: $wanted" }
+            if ($latest -and [version]$wanted -le $latest) { throw "Version $wanted must be above the latest release." }
+            $next = [version]$wanted
+          }
           Write-Host "Version $next (previous: $(if ($previousTag) { $previousTag } else { 'none' }))"
           Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$next" -Encoding ASCII
           Add-Content -Path $env:GITHUB_OUTPUT -Value "previous=$previousTag" -Encoding ASCII
