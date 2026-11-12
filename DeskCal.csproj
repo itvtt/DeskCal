@@ -55,7 +55,12 @@
   <!-- 자동 업데이트 위치: .env 의 UPDATE_* 줄을 앱 옆 update.json 으로 (.env.sample 참고).
        .env 가 없는 개발 빌드는 저장소가 비어 업데이트를 확인하지 않음 -->
   <Target Name="WriteUpdateConfig" BeforeTargets="AssignTargetPaths">
-    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\.env" Condition="Exists('$(MSBuildProjectDirectory)\.env')">
+    <PropertyGroup>
+      <!-- 저장소에 .env 가 없으면 프로필 폴더(사용자 환경 변수 APPS_ENV_DIR)의 DeskCal.env -->
+      <_DeskCalEnvFile>$(MSBuildProjectDirectory)\.env</_DeskCalEnvFile>
+      <_DeskCalEnvFile Condition="!Exists('$(_DeskCalEnvFile)') and '$(APPS_ENV_DIR)' != '' and Exists('$(APPS_ENV_DIR)\DeskCal.env')">$(APPS_ENV_DIR)\DeskCal.env</_DeskCalEnvFile>
+    </PropertyGroup>
+    <ReadLinesFromFile File="$(_DeskCalEnvFile)" Condition="Exists('$(_DeskCalEnvFile)')">
       <Output TaskParameter="Lines" ItemName="_UpdateEnvLine" />
     </ReadLinesFromFile>
     <ItemGroup>
