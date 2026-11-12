@@ -87,6 +87,8 @@ namespace DeskCal
         // 교대근무 (ShiftSchedule.cs)
         public bool ShiftEnabled { get; set; } = false;
         public string ShiftTeam { get; set; } = ShiftSchedule.AllTeams; // "All" 또는 고른 조를 쉼표로 ("B,D")
+        public string ShiftSite { get; set; } = "";  // 고른 사업장 id (비면 목록의 첫 사업장)
+        public string ShiftSites { get; set; } = ""; // 근무 API 가 준 사업장 목록 JSON (비면 기본 두 묶음)
     }
 
     // 고정 위치: 맨 뒤(바탕화면 바로 위) / 맨 앞(항상 위)
@@ -431,12 +433,13 @@ namespace DeskCal
                 value TEXT
             );
 
-            -- 근무 API 로 받은 교대근무 (docs/shift-api.md). 하루 한 조에 한 줄
+            -- 근무 API 로 받은 교대근무 (docs/shift-api.md). 사업장마다 하루 한 조에 한 줄
             CREATE TABLE IF NOT EXISTS shifts (
+                site     TEXT NOT NULL DEFAULT '',
                 date_key TEXT NOT NULL,
                 team     TEXT NOT NULL,
                 code     TEXT NOT NULL,
-                PRIMARY KEY (date_key, team)
+                PRIMARY KEY (site, date_key, team)
             );
 
             CREATE TABLE IF NOT EXISTS holidays (
@@ -457,6 +460,8 @@ namespace DeskCal
             );
         ";
                 cmd.ExecuteNonQuery();
+
+                MigrateShiftsTable(conn);
 
                 // is_macro 컬럼 마이그레이션
                 try
@@ -613,6 +618,8 @@ namespace DeskCal
                 if (dict.TryGetValue("ShowInTaskbar", out v)) _settings.ShowInTaskbar = v == "1";
                 if (dict.TryGetValue("ShiftEnabled", out v)) _settings.ShiftEnabled = v == "1";
                 if (dict.TryGetValue("ShiftTeam", out v) && ParseShiftTeams(v) != null) _settings.ShiftTeam = v;
+                if (dict.TryGetValue("ShiftSite", out v)) _settings.ShiftSite = v;
+                if (dict.TryGetValue("ShiftSites", out v)) _settings.ShiftSites = v;
             }
             catch { }
         }
@@ -651,6 +658,8 @@ namespace DeskCal
                 Upsert("ShowInTaskbar", _settings.ShowInTaskbar ? "1" : "0");
                 Upsert("ShiftEnabled", _settings.ShiftEnabled ? "1" : "0");
                 Upsert("ShiftTeam", _settings.ShiftTeam);
+                Upsert("ShiftSite", _settings.ShiftSite);
+                Upsert("ShiftSites", _settings.ShiftSites);
                 tx.Commit();
             }
             catch { }

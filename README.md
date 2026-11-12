@@ -10,8 +10,8 @@ MainWindow.xaml(.cs)            화면·동작
 AppIcon.cs                      창·작업 표시줄·트레이 아이콘에 오늘 요일·날짜를 그림 (아이폰 캘린더처럼, 자정에 바뀜)
 Theme.cs                        라이트 / 다크 테마 (툴바의 해·달 버튼). 색은 다크 기준으로 적고, 라이트에서 같은 역할의 색으로 바꿈
 MainWindow.Shift.cs             교대근무 표시 (설정의 교대근무 구역, 달력 칸의 조별 근무 배지)
-ShiftSchedule.cs                4조 3교대(A·B·C·D) 계산: D → S → G → 휴, 날짜별 조 근무
-docs\shift-api.md               교대근무 데이터 형식과 근무 API 형식 (공휴일 API 와 같은 방식)
+ShiftSchedule.cs                4조(A·B·C·D) 사업장별 근무: 사업장 목록, 계산 순서(기본 D → S → G → 휴)
+docs\shift-api.md               교대근무 데이터 형식과 근무 API 형식 (사업장 목록, 사업장별 근무)
 MainWindow.Updates.cs           자동 업데이트 (확인 주기·트레이 알림·설치)
 UpdateService.cs                GitHub Release 확인·내려받기·업데이터
 installer\                      DeskCal-Setup.exe / uninstall.exe (.NET Framework 4.8, 사용자별 설치)

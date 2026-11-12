@@ -1030,7 +1030,7 @@
                                 <StackPanel Style="{StaticResource SettingSectionHeader}">
                                     <TextBlock Style="{StaticResource SettingSectionIcon}" Text="&#xE716;" Foreground="{DynamicResource Th_FFFFC94D}"/>
                                     <TextBlock Style="{StaticResource SettingSectionTitle}" Text="교대근무"/>
-                                    <TextBlock Style="{StaticResource SettingHint}" Text="4조 3교대 · A · B · C · D조" Margin="8,1,0,0"
+                                    <TextBlock Style="{StaticResource SettingHint}" Text="4조 · A · B · C · D조" Margin="8,1,0,0"
                                                VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <Border Style="{StaticResource SettingCard}">
@@ -1041,6 +1041,15 @@
                                                       Checked="ChkShiftEnabled_Changed" Unchecked="ChkShiftEnabled_Changed"/>
                                         </Grid>
                                         <StackPanel x:Name="ShiftDetails" Visibility="Collapsed">
+                                            <StackPanel x:Name="ShiftSiteRow">
+                                                <Border Style="{StaticResource SettingDivider}"/>
+                                                <Grid Style="{StaticResource SettingRow}">
+                                                    <TextBlock Text="사업장" Style="{StaticResource SettingLabel}"/>
+                                                    <Border Style="{StaticResource SegmentGroup}">
+                                                        <StackPanel x:Name="ShiftSiteButtons" Orientation="Horizontal"/>
+                                                    </Border>
+                                                </Grid>
+                                            </StackPanel>
                                             <Border Style="{StaticResource SettingDivider}"/>
                                             <Grid Style="{StaticResource SettingRow}">
                                                 <TextBlock Text="표시할 조" Style="{StaticResource SettingLabel}"
