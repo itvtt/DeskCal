@@ -54,6 +54,7 @@ namespace DeskCal
     {
         public MemoItem Item { get; set; }
         public string SourceDate { get; set; }
+        public bool ConfirmCopy { get; set; } // 고정 + 드래그 잠금 중 Ctrl 드래그: 이동은 막고, 놓으면 확인한 뒤 복사
     }
 
     public class HolidayItem
@@ -1902,13 +1903,14 @@ namespace DeskCal
                     if (data.SourceDate == dateKey) return;
                     bool isCopy = (e.KeyStates & DragDropKeyStates.ControlKey) != 0;
 
-                    if (isCopy)
+                    if (data.ConfirmCopy)
                     {
-                        if (!_memoData.TryGetValue(dateKey, out var targetList)) { targetList = new List<MemoItem>(); _memoData[dateKey] = targetList; }
-                        var cloned = data.Item.Clone();
-                        cloned.IsMacro = false;
-                        targetList.Add(cloned);
+                        // 드래그가 끝난 뒤에 확인창 (놓는 도중에 창을 띄우면 드래그가 안 끝남)
+                        if (isCopy) Dispatcher.InvokeAsync(() => ConfirmLockedCopy(data.Item, dateKey));
+                        e.Handled = true;
+                        return;
                     }
+                    if (isCopy) AddMemoCopy(data.Item, dateKey);
                     else
                     {
                         if (_memoData.TryGetValue(data.SourceDate, out var sourceList)) { sourceList.Remove(data.Item); if (sourceList.Count == 0) _memoData.Remove(data.SourceDate); }
@@ -1922,10 +1924,10 @@ namespace DeskCal
 
             cell.DragOver += (s, e) =>
             {
-                if (e.Data.GetDataPresent(typeof(MemoDragData)))
+                if (e.Data.GetData(typeof(MemoDragData)) is MemoDragData data)
                 {
-                    e.Effects = (e.KeyStates & DragDropKeyStates.ControlKey) != 0
-                        ? DragDropEffects.Copy
+                    e.Effects = (e.KeyStates & DragDropKeyStates.ControlKey) != 0 ? DragDropEffects.Copy
+                        : data.ConfirmCopy ? DragDropEffects.None // 잠금 중엔 이동 불가 (Ctrl 을 떼면 놓을 수 없음)
                         : DragDropEffects.Move;
                     e.Handled = true;
                 }
@@ -2136,16 +2138,42 @@ namespace DeskCal
                 var diff = _dragStartPosition - e.GetPosition(null);
                 if (!_isDragging && (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance || Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance))
                 {
-                    // 고정 + 드래그 잠금 시 차단
-                    if (IsPinned && _settings.LockDragWhenPinned) return;
+                    // 고정 + 드래그 잠금: 이동은 막고, Ctrl 을 누른 채 끌면 놓을 때 확인한 뒤 복사만
+                    bool locked = IsPinned && _settings.LockDragWhenPinned;
+                    if (locked && (Keyboard.Modifiers & ModifierKeys.Control) == 0) return;
 
                     _isDragging = true;
-                    if (tb.Tag is MemoItem mi && tb.Parent is StackPanel memoPanel && memoPanel.Parent is ScrollViewer scrollViewer && scrollViewer.Parent is Grid g && g.Parent is Border cellBorder && cellBorder.Tag is string sourceDateKey)
-                        DragDrop.DoDragDrop(tb, new MemoDragData { Item = mi, SourceDate = sourceDateKey },
-                            DragDropEffects.Move | DragDropEffects.Copy);
+                    if (tb.Tag is MemoItem mi && FindCellDateKey(tb) is string sourceDateKey)
+                        DragDrop.DoDragDrop(tb, new MemoDragData { Item = mi, SourceDate = sourceDateKey, ConfirmCopy = locked },
+                            locked ? DragDropEffects.Copy : DragDropEffects.Move | DragDropEffects.Copy);
                     _isDragging = false;
                 }
             }
+        }
+
+        // 일정 글자에서 위로 올라가 날짜 칸(Tag = "yyyy-MM-dd" 인 Border)을 찾음
+        private static string? FindCellDateKey(DependencyObject element)
+        {
+            for (var node = VisualTreeHelper.GetParent(element); node != null; node = VisualTreeHelper.GetParent(node))
+                if (node is Border { Tag: string dateKey }) return dateKey;
+            return null;
+        }
+
+        private void AddMemoCopy(MemoItem item, string dateKey)
+        {
+            if (!_memoData.TryGetValue(dateKey, out var targetList)) { targetList = new List<MemoItem>(); _memoData[dateKey] = targetList; }
+            var cloned = item.Clone();
+            cloned.IsMacro = false;
+            targetList.Add(cloned);
+        }
+
+        private void ConfirmLockedCopy(MemoItem item, string dateKey)
+        {
+            var target = DateTime.ParseExact(dateKey, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            if (MessageBox.Show(this, $"{target:M월 d일}에 일정을 복사할까요?\n\n\"{item.Text}\"", "일정 복사",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            AddMemoCopy(item, dateKey);
+            SaveData(); RefreshCalendar();
         }
 
         // ══════════════════════════════════════════════════════════════
