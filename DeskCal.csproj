@@ -12,7 +12,7 @@
     <ApplicationIcon>cal.ico</ApplicationIcon>
     <!-- 릴리스 버전의 바닥값. 러너(.github\workflows\release.yml)는 마지막 릴리스 다음 번호를 골라 -p:Version 으로 넘김.
          큰 변경으로 번호를 올리려면 여기만 올리면 됨 (예: 1.2.0) -->
-    <Version>6.2.1</Version>
+    <Version>6.2.2</Version>
     <!-- 설치 프로그램·빌드 스크립트·빌드 결과는 앱 소스가 아님 (out\ 의 게시 결과가 프로젝트에 끌려 들어오지 않게) -->
     <DefaultItemExcludes>$(DefaultItemExcludes);installer\**;build\**;out\**;artifacts\**</DefaultItemExcludes>
     <!-- .NET 10 이 없는 PC 에는 DeskCal-Setup.exe 가 실행 환경을 <앱>\dotnet 에 넣음.

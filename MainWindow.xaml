@@ -578,10 +578,14 @@
                             WindowChrome.IsHitTestVisibleInChrome="True"
                             MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"/>
                     <!-- 현재 버전. 내용·툴팁(업데이트 확인 결과)은 코드에서 채움. 여기를 끌어도 창이 옮겨짐 -->
-                    <TextBlock x:Name="TxtVersion" HorizontalAlignment="Left" VerticalAlignment="Center"
-                               Margin="18,0,0,0" FontSize="11" Foreground="{DynamicResource Th_FF7880A0}"
-                               WindowChrome.IsHitTestVisibleInChrome="True"
-                               MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"/>
+                    <Border x:Name="VersionBadge" HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Margin="16,0,0,0" Padding="9,3,9,4" CornerRadius="10"
+                            Background="{DynamicResource Th_12FFFFFF}" BorderBrush="{DynamicResource Th_1AFFFFFF}" BorderThickness="1"
+                            WindowChrome.IsHitTestVisibleInChrome="True"
+                            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                        <TextBlock x:Name="TxtVersion" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Th_FFA0A8C4}"/>
+                    </Border>
                     <!-- 오른쪽 버튼들과 겹치면 코드(ArrangeTitle)에서 왼쪽 남는 공간 가운데로 옮김 -->
                     <StackPanel x:Name="TitleCenter" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"
                                 SizeChanged="TitleBar_SizeChanged">

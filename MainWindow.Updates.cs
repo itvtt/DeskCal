@@ -33,11 +33,11 @@ namespace DeskCal
             var settings = UpdateService.LoadSettings();
             if (settings is null)
             {
-                TxtVersion.ToolTip = "자동 업데이트 꺼짐 · 이 빌드에 업데이트 저장소(UPDATE_REPOSITORY)가 없습니다.";
+                VersionBadge.ToolTip = "자동 업데이트 꺼짐 · 이 빌드에 업데이트 저장소(UPDATE_REPOSITORY)가 없습니다.";
                 return;
             }
             _updateService = new UpdateService(settings);
-            TxtVersion.ToolTip = "업데이트 확인 전";
+            VersionBadge.ToolTip = "업데이트 확인 전";
             _updateTimer = new DispatcherTimer(FirstUpdateCheckDelay, DispatcherPriority.Background,
                 async (s, e) => await RunScheduledUpdateCheckAsync(), Dispatcher);
             if (_trayIcon != null) _trayIcon.BalloonTipClicked += (s, e) => InstallUpdate();
@@ -78,19 +78,19 @@ namespace DeskCal
                 // 오프라인이거나 서버에 닿지 않음: 창을 띄우지 않고 다음 확인 때 다시
                 string reason = ex is UpdateAccessException ? ex.Message
                     : ex is HttpRequestException { StatusCode: { } code } ? $"서버 응답 {(int)code}" : ex.GetType().Name;
-                TxtVersion.ToolTip = $"업데이트 확인 실패 · {DateTime.Now:HH:mm} · {reason}";
+                VersionBadge.ToolTip = $"업데이트 확인 실패 · {DateTime.Now:HH:mm} · {reason}";
                 return false;
             }
             finally { _updateBusy = false; }
 
             if (update is null)
             {
-                TxtVersion.ToolTip = $"최신 버전 · {DateTime.Now:HH:mm} 확인";
+                VersionBadge.ToolTip = $"최신 버전 · {DateTime.Now:HH:mm} 확인";
                 return true;
             }
             _availableUpdate = update;
             string next = "v" + update.Version.ToString(3);
-            TxtVersion.ToolTip = $"새 버전 {next} 있음 · {DateTime.Now:HH:mm} 확인 · 트레이 메뉴에서 설치";
+            VersionBadge.ToolTip = $"새 버전 {next} 있음 · {DateTime.Now:HH:mm} 확인 · 트레이 메뉴에서 설치";
             ShowUpdateInTray(next);
             if (ask && _askedUpdate != update.Version)
             {
@@ -131,7 +131,7 @@ namespace DeskCal
             string updates = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeskCal", "updates");
             try
             {
-                TxtVersion.ToolTip = $"{next} 내려받는 중…";
+                VersionBadge.ToolTip = $"{next} 내려받는 중…";
                 using var download = new CancellationTokenSource(TimeSpan.FromMinutes(10));
                 string package = await _updateService.DownloadAsync(update, updates, download.Token);
                 UpdateService.LaunchUpdater(package, AppContext.BaseDirectory, Path.Combine(updates, "update.log"));
@@ -141,7 +141,7 @@ namespace DeskCal
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException or InvalidDataException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
             {
-                TxtVersion.ToolTip = $"업데이트 실패 · {DateTime.Now:HH:mm}";
+                VersionBadge.ToolTip = $"업데이트 실패 · {DateTime.Now:HH:mm}";
                 MessageBox.Show($"{next}을(를) 내려받거나 설치를 준비하지 못했습니다.\n\n{ex.Message}\n\n지금 버전({current})을 계속 사용합니다.",
                     "DeskCal 업데이트", MessageBoxButton.OK, MessageBoxImage.Warning);
             }

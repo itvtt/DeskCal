@@ -1309,15 +1309,15 @@ namespace DeskCal
         {
             const double gap = 12;
             double toolbarLeft = TitleBarGrid.ActualWidth - TitleToolbar.ActualWidth - TitleToolbar.Margin.Right;
-            double versionEdge = TxtVersion.Margin.Left + TxtVersion.ActualWidth + gap;
+            double versionEdge = VersionBadge.Margin.Left + VersionBadge.ActualWidth + gap;
             double todaySpace = BtnToday.Width + BtnToday.Margin.Left;
             double fullWidth = TitleCenter.ActualWidth + (BtnToday.Visibility == Visibility.Visible ? 0 : todaySpace);
             bool showToday = fullWidth <= toolbarLeft - gap - versionEdge;
             BtnToday.Visibility = showToday ? Visibility.Visible : Visibility.Collapsed;
             double titleWidth = showToday ? fullWidth : fullWidth - todaySpace;
             bool showVersion = titleWidth <= toolbarLeft - gap - versionEdge;
-            TxtVersion.Visibility = showVersion ? Visibility.Visible : Visibility.Hidden; // Hidden 은 숨겨도 폭이 유지되어 다시 계산 가능
-            double leftEdge = showVersion ? versionEdge : TxtVersion.Margin.Left;
+            VersionBadge.Visibility = showVersion ? Visibility.Visible : Visibility.Hidden; // Hidden 은 숨겨도 폭이 유지되어 다시 계산 가능
+            double leftEdge = showVersion ? versionEdge : VersionBadge.Margin.Left;
             bool fitsCentered = (TitleBarGrid.ActualWidth - titleWidth) / 2 >= leftEdge
                 && (TitleBarGrid.ActualWidth + titleWidth) / 2 <= toolbarLeft - gap;
             TitleCenter.HorizontalAlignment = fitsCentered ? HorizontalAlignment.Center : HorizontalAlignment.Left;
