@@ -47,7 +47,7 @@ namespace desk_cal
             MainWindow = window;
             _showWindowEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowWindowEventName);
             _showWindowWait = ThreadPool.RegisterWaitForSingleObject(_showWindowEvent,
-                (_, _) => Dispatcher.InvokeAsync(window.ShowFromTray), null, Timeout.Infinite, executeOnlyOnce: false);
+                (_, _) => Dispatcher.InvokeAsync(window.OnLaunchedAgain), null, Timeout.Infinite, executeOnlyOnce: false);
             window.Show();
         }
 
