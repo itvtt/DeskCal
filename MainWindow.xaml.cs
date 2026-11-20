@@ -539,6 +539,7 @@ namespace DeskCal
 
         private void SaveData()
         {
+            ILuncher.AppKit.AppUsage.Count("event");
             try
             {
                 using var conn = new SqliteConnection(ConnectionString);

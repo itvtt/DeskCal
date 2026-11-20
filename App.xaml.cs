@@ -49,6 +49,8 @@ namespace desk_cal
             _showWindowWait = ThreadPool.RegisterWaitForSingleObject(_showWindowEvent,
                 (_, _) => Dispatcher.InvokeAsync(window.OnLaunchedAgain), null, Timeout.Infinite, executeOnlyOnce: false);
             window.Show();
+            // 사용 시간 · 화면에 떠 있는 시간 · 일정 저장 집계 (AppKit\AppUsage.cs → API 서버, ImPerformance 성과 계산용)
+            ILuncher.AppKit.AppUsage.Start(ILuncher.AppKit.UsageKind.Resident);
         }
 
         protected override void OnExit(ExitEventArgs e)
