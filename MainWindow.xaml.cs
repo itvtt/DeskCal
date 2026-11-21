@@ -5065,6 +5065,7 @@ namespace DeskCal
         {
             _hwnd = new WindowInteropHelper(this).Handle;
             HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
+            ApplyTaskbarAppId(); // 작업 표시줄 버튼도 오늘 날짜 아이콘으로 (MainWindow.AppIcon.cs)
             // 설정에 따라 작업 표시줄 창 또는 작업 표시줄·Alt+Tab 에 나오지 않는 도구 창 (트레이 아이콘으로만 접근)
             int exStyle = DesktopWindowNative.GetWindowLong(_hwnd, DesktopWindowNative.GWL_EXSTYLE);
             DesktopWindowNative.SetWindowLong(_hwnd, DesktopWindowNative.GWL_EXSTYLE, ToTaskbarExStyle(exStyle));
