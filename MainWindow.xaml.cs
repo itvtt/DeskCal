@@ -4952,6 +4952,9 @@ namespace DeskCal
 
         private static System.Drawing.Icon LoadTrayIcon()
         {
+            // 처음부터 오늘 날짜 (Windows 가 트레이 아이콘 설정 목록에 처음 찍어 두는 그림도 고정 아이콘 '31' 이 아니게)
+            try { return new System.Drawing.Icon(new MemoryStream(AppIcon.BuildIco(DateTime.Today)), System.Windows.Forms.SystemInformation.SmallIconSize); }
+            catch (Exception ex) { Debug.WriteLine($"오늘 날짜 트레이 아이콘 실패: {ex.Message}"); }
             try
             {
                 var res = Application.GetResourceStream(new Uri("pack://application:,,,/cal.ico"));

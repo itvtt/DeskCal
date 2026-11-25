@@ -216,6 +216,7 @@ internal static class Installer
             using (var run = Registry.CurrentUser.OpenSubKey(RunKey, writable: true))
                 if (run?.GetValue(AutoStartValue) is string command && IsInside(command.Trim('"'), target))
                     run.DeleteValue(AutoStartValue, throwOnMissingValue: false);
+        if (ShortcutDirectory is null) RemoveTrayIconSettings(target);
         progress("파일 삭제 중…");
         string self = Path.GetFullPath(SelfPath);
         foreach (string file in Directory.EnumerateFiles(target, "*", SearchOption.AllDirectories))
@@ -228,6 +229,29 @@ internal static class Installer
                 { CreateNoWindow = true, UseShellExecute = false, WorkingDirectory = Path.GetTempPath() });
         else if (!Directory.EnumerateFileSystemEntries(target).Any()) Directory.Delete(target);
         progress("제거 완료");
+    }
+
+    /// <summary>
+    /// 트레이 아이콘 설정(설정 → 작업 표시줄 → 기타 시스템 트레이 아이콘)에서 이 설치 폴더의 실행 파일 항목과 그 알림 등록을 지움
+    /// (지운 앱의 예전 아이콘 그림이 목록에 남지 않게). 일정 데이터와 다른 프로그램의 항목은 그대로
+    /// </summary>
+    private static void RemoveTrayIconSettings(string target)
+    {
+        try
+        {
+            using var root = Registry.CurrentUser.OpenSubKey(@"Control Panel\NotifyIconSettings", writable: true);
+            if (root is null) return;
+            foreach (string id in root.GetSubKeyNames())
+            {
+                string? path;
+                using (var entry = root.OpenSubKey(id)) path = entry?.GetValue("ExecutablePath") as string;
+                if (path is null || !IsInside(path, target)) continue;
+                root.DeleteSubKeyTree(id, throwOnMissingSubKey: false);
+                Registry.CurrentUser.DeleteSubKeyTree(@"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\NotifyIconGeneratedAumid_" + id, throwOnMissingSubKey: false);
+                Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\AppUserModelId\NotifyIconGeneratedAumid_" + id, throwOnMissingSubKey: false);
+            }
+        }
+        catch (Exception error) when (error is System.Security.SecurityException or UnauthorizedAccessException or IOException or ArgumentException) { }
     }
 
     /// <summary>이 사용자에게 설치된 DeskCal 의 설치 위치 (Windows "앱" 목록에 기록된 것)</summary>

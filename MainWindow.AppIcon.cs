@@ -77,6 +77,8 @@ namespace DeskCal
                     var old = _trayIcon.Icon;
                     _trayIcon.Icon = new System.Drawing.Icon(new MemoryStream(ico), System.Windows.Forms.SystemInformation.SmallIconSize);
                     old?.Dispose();
+                    // Windows 트레이 아이콘 설정 목록의 그림도 오늘 날짜로 (Windows 는 처음 한 번만 찍어 두어 '31' 이나 예전 날짜가 남았음)
+                    ILuncher.AppKit.AppTrayIcon.Show(_trayIcon.Icon.Handle);
                 }
                 _iconDate = today;
             }
