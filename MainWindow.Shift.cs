@@ -440,7 +440,7 @@ namespace DeskCal
                             ins.ExecuteNonQuery();
                         }
                 }
-                tx.Commit();
+                CommitShared(conn, tx); // PARA 달력도 다시 읽게
             }
             catch (Exception ex) { Debug.WriteLine($"[Shift] DB 저장 실패: {ex.Message}"); }
         }

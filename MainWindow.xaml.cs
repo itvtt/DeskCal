@@ -209,6 +209,7 @@ namespace DeskCal
             InitializeComponent();
 
             InitDatabase();
+            CreateSync(); // PARA 의 달력 탭과 같은 데이터 (MainWindow.Sync.cs)
 
             LoadHolidays();
             LoadData();
@@ -281,6 +282,7 @@ namespace DeskCal
             InitAppIcon(); // 아이콘에 오늘 요일·날짜 (아이폰 캘린더처럼)
             StartUpdateChecks();
             UpdatePinIndicators();
+            _sync.Start();
 
             this.PreviewKeyDown += (s, e) =>
             {
@@ -514,26 +516,10 @@ namespace DeskCal
             {
                 using var conn = new SqliteConnection(ConnectionString);
                 conn.Open();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT date_key, text, is_done, text_color, is_macro, macro_id FROM memos ORDER BY date_key, item_index";
-                using var reader = cmd.ExecuteReader();
-                while (reader.Read())
-                {
-                    string dateKey = reader.GetString(0);
-                    var item = new MemoItem
-                    {
-                        Text = reader.IsDBNull(1) ? "" : reader.GetString(1),
-                        IsDone = reader.GetInt32(2) == 1,
-                        TextColor = reader.IsDBNull(3) ? null : reader.GetString(3),
-                        IsMacro = !reader.IsDBNull(4) && reader.GetInt32(4) == 1,
-                        MacroId = reader.IsDBNull(5) ? 0 : reader.GetInt32(5)
-                    };
-                    if (!_memoData.ContainsKey(dateKey))
-                        _memoData[dateKey] = new List<MemoItem>();
-                    _memoData[dateKey].Add(item);
-                }
+                _memoData = ReadMemos(conn, null);
             }
             catch { }
+            _memoSnapshot = CloneMemos(_memoData);
             RebuildRunPatterns();
         }
 
@@ -545,6 +531,9 @@ namespace DeskCal
                 using var conn = new SqliteConnection(ConnectionString);
                 conn.Open();
                 using var tx = conn.BeginTransaction();
+                // PARA 달력이 그사이 일정을 바꿨으면 이 앱이 고친 날만 덮어씀 (MainWindow.Sync.cs)
+                if (CalendarSync.Read(conn, tx) != _sync.Known)
+                    _memoData = MergeMemos(_memoData, _memoSnapshot, ReadMemos(conn, tx));
                 using (var del = conn.CreateCommand())
                 {
                     del.Transaction = tx;
@@ -578,7 +567,8 @@ namespace DeskCal
                         ins.ExecuteNonQuery();
                     }
                 }
-                tx.Commit();
+                CommitShared(conn, tx);
+                _memoSnapshot = CloneMemos(_memoData);
             }
             catch { }
             RebuildRunPatterns();
@@ -623,16 +613,19 @@ namespace DeskCal
                 if (dict.TryGetValue("ShiftSites", out v)) _settings.ShiftSites = v;
             }
             catch { }
+            _sharedLoaded = CurrentSharedSettings();
         }
 
 
         private void SaveSettings()
         {
+            bool sharedAdopted = false;
             try
             {
                 using var conn = new SqliteConnection(ConnectionString);
                 conn.Open();
                 using var tx = conn.BeginTransaction();
+                bool sharedChanged = MergeSharedSettings(conn, tx, out sharedAdopted);
                 using var cmd = conn.CreateCommand();
                 cmd.Transaction = tx;
                 cmd.CommandText = "INSERT OR REPLACE INTO settings (key, value) VALUES (@k, @v)";
@@ -661,9 +654,12 @@ namespace DeskCal
                 Upsert("ShiftTeam", _settings.ShiftTeam);
                 Upsert("ShiftSite", _settings.ShiftSite);
                 Upsert("ShiftSites", _settings.ShiftSites);
-                tx.Commit();
+                if (sharedChanged) CommitShared(conn, tx); // PARA 달력이 다시 읽게
+                else tx.Commit();
+                _sharedLoaded = CurrentSharedSettings();
             }
             catch { }
+            if (sharedAdopted) { ApplySharedSettingsUi(); LoadShifts(); RefreshCalendar(); } // PARA 달력이 바꾼 교대근무 설정
         }
 
         private void ChkConnectConsecutive_Changed(object sender, RoutedEventArgs e)
@@ -990,7 +986,7 @@ namespace DeskCal
                 var pRecur = ins.Parameters.Add("@recur", SqliteType.Integer);
                 var pName = ins.Parameters.Add("@name", SqliteType.Text);
                 foreach (var h in _holidayList) { pDk.Value = h.DateKey; pRecur.Value = h.IsRecurring ? 1 : 0; pName.Value = h.Name; ins.ExecuteNonQuery(); }
-                tx.Commit();
+                CommitShared(conn, tx);
             }
             catch { }
         }
@@ -1041,7 +1037,9 @@ namespace DeskCal
             {
                 using var conn = new SqliteConnection(ConnectionString);
                 conn.Open();
+                using var tx = conn.BeginTransaction();
                 using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
                 if (macro.MacroId == 0)
                 {
                     cmd.CommandText = @"INSERT INTO macro_schedules (name, text, text_color, repeat_type, repeat_value, month_end_fallback, start_date, end_date)
@@ -1066,9 +1064,11 @@ namespace DeskCal
                 if (macro.MacroId == 0)
                 {
                     using var cmd2 = conn.CreateCommand();
+                    cmd2.Transaction = tx;
                     cmd2.CommandText = "SELECT last_insert_rowid()";
                     macro.MacroId = Convert.ToInt32(cmd2.ExecuteScalar());
                 }
+                CommitShared(conn, tx);
             }
             catch { }
         }
@@ -1079,10 +1079,13 @@ namespace DeskCal
             {
                 using var conn = new SqliteConnection(ConnectionString);
                 conn.Open();
+                using var tx = conn.BeginTransaction();
                 using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
                 cmd.CommandText = "DELETE FROM macro_schedules WHERE macro_id = @id";
                 cmd.Parameters.AddWithValue("@id", macroId);
                 cmd.ExecuteNonQuery();
+                CommitShared(conn, tx);
             }
             catch { }
         }

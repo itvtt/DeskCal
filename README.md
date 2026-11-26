@@ -2,6 +2,8 @@
 
 바탕화면 달력 (WPF, .NET 10). 일정 데이터는 `C:\Deskcal\deskcal.db` 에 있고, 설치·업데이트·제거 어느 때도 건드리지 않습니다.
 
+**PARA 의 달력 탭이 같은 데이터를 함께 씁니다** (PARA 저장소 `PARA\DeskCal\` 에 이 앱의 달력을 옮겨 둠): 어느 쪽에서 일정을 고쳐도 다른 쪽에 2초 안에 보이고, 둘이 같은 때 고쳐도 서로 지우지 않습니다 (`CalendarSync.cs`, `MainWindow.Sync.cs`). 교대근무 설정도 함께, 창 · 보기 설정은 앱마다 따로. 달력 코드를 고치면 PARA 쪽에도 옮깁니다.
+
 ## 폴더 구조
 
 ```
@@ -10,6 +12,8 @@ MainWindow.xaml(.cs)            화면·동작
 AppIcon.cs                      창·작업 표시줄·트레이 아이콘에 오늘 요일·날짜를 그림 (아이폰 캘린더처럼, 자정에 바뀜)
 Theme.cs                        라이트 / 다크 테마 (툴바의 해·달 버튼). 색은 다크 기준으로 적고, 라이트에서 같은 역할의 색으로 바꿈
 MainWindow.Shift.cs             교대근무 표시 (설정의 교대근무 구역, 달력 칸의 조별 근무 배지)
+MainWindow.Sync.cs              PARA 달력 탭과 함께 쓰기 (다른 앱이 바꾸면 다시 읽기, 저장할 때 합치기, 교대근무 설정 함께)
+CalendarSync.cs                 DataRevision 판 읽기 · 올리기, 2초마다 확인 (PARA 에도 같은 파일)
 ShiftSchedule.cs                4조(A·B·C·D) 사업장별 근무: 사업장 목록, 계산 순서(기본 D → S → G → 휴)
 docs\shift-api.md               교대근무 데이터 형식과 근무 API 형식 (사업장 목록, 사업장별 근무)
 MainWindow.Updates.cs           자동 업데이트 (확인 주기·트레이 알림·설치)
